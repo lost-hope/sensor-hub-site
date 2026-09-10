@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLED Sensor Hub</title>
+<meta name="description" content="A central WLED usermod for aggregating sensor readings, plus 23 provider usermods and consumer usermods that bind sensors to effects.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --bg-alt: #f5f6f8;
+    --text: #1a1d23;
+    --text-dim: #5b6270;
+    --border: #e2e4e9;
+    --accent: #2f6fed;
+    --accent-bg: #eef3fe;
+    --code-bg: #f0f1f4;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --bg-alt: #1b1e24;
+      --text: #e7e9ee;
+      --text-dim: #9aa1ad;
+      --border: #2b2f38;
+      --accent: #6d9bff;
+      --accent-bg: #1c2536;
+      --code-bg: #20232a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 3rem 1.25rem 5rem;
+  }
+  header.hero {
+    text-align: center;
+    padding: 1rem 0 2.5rem;
+  }
+  header.hero h1 {
+    font-size: 2.2rem;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  header.hero p.tagline {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .badges {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .badge:hover { border-color: var(--accent); }
+
+  section { margin-top: 3rem; }
+  section > h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  section > p.lead {
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+    margin-bottom: 1.5rem;
+    max-width: 720px;
+  }
+
+  .arch {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .arch .box {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    background: var(--bg-alt);
+  }
+  .arch .box h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .arch .box p { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
+  .arch .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 1.4rem;
+  }
+  @media (max-width: 720px) {
+    .arch { grid-template-columns: 1fr; }
+    .arch .arrow { transform: rotate(90deg); }
+  }
+
+  .hub-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    background: var(--bg-alt);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .hub-card div p { margin: 0.3rem 0 0; color: var(--text-dim); }
+  .hub-card div h3 { margin: 0; font-size: 1.15rem; }
+
+  .btn {
+    display: inline-block;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.92rem;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  .category { margin-bottom: 2rem; }
+  .category h3 {
+    font-size: 1.02rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.9rem;
+  }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    background: var(--bg);
+    transition: border-color 0.15s ease;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card a.name {
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.98rem;
+  }
+  .card a.name:hover { color: var(--accent); }
+  .card p {
+    margin: 0.35rem 0 0;
+    font-size: 0.87rem;
+    color: var(--text-dim);
+  }
+  .card code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  pre {
+    background: var(--code-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  ol.steps { padding-left: 1.2rem; }
+  ol.steps li { margin-bottom: 0.6rem; }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+  footer a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <h1>WLED Sensor Hub</h1>
+    <p class="tagline">
+      A central WLED usermod that turns sensor readings from independent provider
+      usermods into MQTT (with Home Assistant discovery), the <code>/json</code> API
+      and the web UI Info tab &mdash; plus consumer usermods that bind those readings
+      straight into effects, brightness and color, live.
+    </p>
+    <div class="badges">
+      <a class="badge" href="https://github.com/lost-hope/sensor-hub">Hub Repo</a>
+      <a class="badge" href="#providers">23 Providers</a>
+      <a class="badge" href="#consumers">2 Consumers</a>
+      <a class="badge" href="https://github.com/wled/WLED">Built for WLED</a>
+    </div>
+  </header>
+
+  <section id="architecture">
+    <h2>How it fits together</h2>
+    <p class="lead">
+      One usermod owns the bus. Everything else either feeds it or reads from it &mdash;
+      no provider ever talks to MQTT/JSON/HA directly, and no consumer ever needs to
+      know which physical chip a reading came from.
+    </p>
+    <div class="arch">
+      <div class="box">
+        <h3>Providers</h3>
+        <p>Read one piece of hardware (an I2C chip, a GPIO pin, ...) and push readings into the hub.</p>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="box">
+        <h3>Sensor Hub</h3>
+        <p>Owns MQTT/HA discovery, the JSON API and the Info tab. Sensors register at compile time, attach at runtime &mdash; no fixed limit.</p>
+      </div>
+    </div>
+    <div class="arch" style="margin-top: 0.5rem;">
+      <div class="box">
+        <h3>Sensor Hub</h3>
+        <p>Exposes readings by name (<code>getValueByName()</code>) or by quantity (<code>getValue(type)</code>).</p>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="box">
+        <h3>Consumers</h3>
+        <p>Read the hub and drive an effect, a color, brightness &mdash; a bespoke effect, or a generic live binding.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="hub">
+    <h2>The Hub</h2>
+    <div class="hub-card">
+      <div>
+        <h3>sensor-hub</h3>
+        <p>Compile-time sensor slot registration (no fixed sensor limit), an open string-identified
+          measurement type system, MQTT + Home Assistant discovery, the JSON API, Info tab display
+          with per-quantity unit conversion.</p>
+      </div>
+      <a class="btn" href="https://github.com/lost-hope/sensor-hub">View on GitHub</a>
+    </div>
+  </section>
+
+  <section id="providers">
+    <h2>Sensor Providers</h2>
+    <p class="lead">Each provider owns exactly one piece of hardware and knows nothing about MQTT, JSON, or Home Assistant &mdash; that's the hub's job.</p>
+
+    <div class="category">
+      <h3>Temperature &amp; Humidity</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-bme280-provider">BME280</a>
+          <p>Bosch BME280 &mdash; <code>temperature</code>, <code>humidity</code>, <code>pressure</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-shtc3-provider">SHTC3</a>
+          <p>Sensirion SHTC3 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-si7021-provider">Si7021</a>
+          <p>Silicon Labs Si7021 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-aht10-provider">AHT10 / AHT20</a>
+          <p>Aosong AHT10/AHT20 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-dht-provider">DHT11 / DHT22</a>
+          <p>DHT11 / DHT22 (AM2302) &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-ds18b20-provider">DS18B20</a>
+          <p>Dallas/Maxim 1-Wire probe &mdash; <code>temperature</code> only.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-internal-temperature-provider">Internal Temperature</a>
+          <p>The ESP32's own built-in die temperature sensor &mdash; no extra hardware.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Air Quality</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-scd4x-provider">SCD40 / SCD41</a>
+          <p>Sensirion SCD4x &mdash; true NDIR <code>co2</code> (ppm), plus <code>temperature</code>/<code>humidity</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-bme68x-provider">BME68X</a>
+          <p>Bosch BME680/BME688 &mdash; temperature/humidity/pressure plus raw <code>gas_resistance</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Light &amp; Color</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-bh1750-provider">BH1750</a>
+          <p>Rohm BH1750 &mdash; calibrated <code>illuminance</code> (lx).</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-ldr-provider">LDR</a>
+          <p>Simple photoresistor voltage divider &mdash; uncalibrated 0-100% light level.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-tcs34725-provider">TCS34725</a>
+          <p>RGB color + ambient light &mdash; <code>illuminance</code>, <code>color_temp</code>, R/G/B channels.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Motion &amp; Presence</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-pir-provider">PIR</a>
+          <p>HC-SR501 and similar &mdash; single binary <code>motion</code> sensor.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-ld2410-provider">LD2410</a>
+          <p>Hi-Link mmWave presence radar &mdash; presence plus moving/stationary distance.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Distance &amp; Ranging</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-vl53l0x-provider">VL53L0X</a>
+          <p>ST time-of-flight sensor &mdash; <code>distance</code> (mm), I2C.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-hcsr04-provider">HC-SR04</a>
+          <p>Ultrasonic distance &mdash; cheaper, longer-range alternative that also works outdoors.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Orientation &amp; Motion (IMU)</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-qmi8658-provider">QMI8658</a>
+          <p>6-axis IMU &mdash; 3-axis <code>acceleration</code> exposed.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-mpu6050-provider">MPU-6050</a>
+          <p>InvenSense 6-axis IMU &mdash; 3-axis <code>acceleration</code> exposed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Electrical</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-ads1115-provider">ADS1115</a>
+          <p>TI 16-bit 4-channel ADC &mdash; four generic analog voltage inputs.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-ina226-provider">INA226</a>
+          <p>Current/voltage/power monitor &mdash; <code>voltage</code>, <code>current</code>, <code>power</code>.</p>
+        </div>
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-max17048-provider">MAX17048</a>
+          <p>LiPo/LiIon fuel gauge &mdash; <code>voltage</code>, <code>battery</code> (%).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Soil &amp; Environment</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-soil-moisture-provider">Soil Moisture</a>
+          <p>Capacitive probe &mdash; calibrated 0-100% moisture level.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="category">
+      <h3>Generic I/O</h3>
+      <div class="cards">
+        <div class="card">
+          <a class="name" href="https://github.com/lost-hope/sensor-hub-gpio-provider">GPIO Contact</a>
+          <p>4 independent digital pins &mdash; reed switches, float switches, dry contacts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="consumers">
+    <h2>Consumer Usermods</h2>
+    <p class="lead">These don't provide sensors &mdash; they read the hub and drive WLED itself.</p>
+    <div class="cards">
+      <div class="card">
+        <a class="name" href="https://github.com/lost-hope/particle-tilt-effect">particle-tilt-effect</a>
+        <p>Adds a new WLED effect, "Accel Tilt": a particle-system box that tilts with a real
+          accelerometer reading, instead of a canned animation.</p>
+      </div>
+      <div class="card">
+        <a class="name" href="https://github.com/lost-hope/sensor-fx-binder">sensor-fx-binder</a>
+        <p>Binds live sensor readings to any existing effect's speed/intensity/custom sliders,
+          brightness, color or checkboxes &mdash; generically, no bespoke effect required.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <h2>Getting started</h2>
+    <ol class="steps">
+      <li>Clone/symlink <a href="https://github.com/lost-hope/sensor-hub"><code>sensor-hub</code></a> and whichever provider(s) match your hardware next to your WLED checkout.</li>
+      <li>Add them to <code>custom_usermods</code> in <code>platformio_override.ini</code>:</li>
+    </ol>
+    <pre><code>custom_usermods =
+  ${env:esp32dev.custom_usermods}
+  sensor-hub = symlink://../sensor-hub
+  sensor-hub-bme280-provider = symlink://../sensor-hub-bme280-provider</code></pre>
+    <ol class="steps" start="3">
+      <li>Build and flash. Configure each provider's pins/I2C in its own Settings page &mdash; sensors appear in MQTT, the Info tab and <code>/json/state</code> automatically once attached.</li>
+      <li>Optionally add <a href="https://github.com/lost-hope/sensor-fx-binder"><code>sensor-fx-binder</code></a> to bind a live reading straight into an effect.</li>
+    </ol>
+    <p>Full wiring, settings and MQTT/HA discovery details are documented in each repo's own readme &mdash; start with <a href="https://github.com/lost-hope/sensor-hub">sensor-hub</a>.</p>
+  </section>
+
+  <footer>
+    <p>All repos live under <a href="https://github.com/lost-hope">github.com/lost-hope</a>. Built as out-of-tree usermods for <a href="https://github.com/wled/WLED">WLED</a>.</p>
+  </footer>
+
+</main>
+</body>
+</html>
