@@ -5,120 +5,182 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WLED Sensor Hub</title>
 <meta name="description" content="A central WLED usermod for aggregating sensor readings, plus 23 provider usermods and consumer usermods that bind sensors to effects. Includes a config builder.">
+<meta name="theme-color" content="#0a0a0c">
 <style>
   :root {
-    color-scheme: light dark;
-    --bg: #ffffff;
-    --bg-alt: #f5f6f8;
-    --text: #1a1d23;
-    --text-dim: #5b6270;
-    --border: #e2e4e9;
-    --accent: #2f6fed;
-    --accent-bg: #eef3fe;
-    --code-bg: #f0f1f4;
-    --radius: 10px;
+    color-scheme: dark;
+    --canvas: #0a0a0c;
+    --surface-soft: #101114;
+    --surface-card: #17181c;
+    --surface-elevated: #202126;
+    --hairline: #2a2c31;
+    --hairline-strong: #383a41;
+    --ink: #ffffff;
+    --body: #aeb2ba;
+    --body-strong: #dcdee2;
+    --muted: #6d7178;
+    --code-bg: #101114;
 
-    --c-temp: #e8590c;
-    --c-air: #0ca678;
-    --c-light: #f08c00;
-    --c-motion: #7048e8;
-    --c-distance: #1971c2;
-    --c-imu: #d6336c;
-    --c-elec: #e03131;
-    --c-soil: #2f9e44;
-    --c-io: #4263eb;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14161a;
-      --bg-alt: #1b1e24;
-      --text: #e7e9ee;
-      --text-dim: #9aa1ad;
-      --border: #2b2f38;
-      --accent: #6d9bff;
-      --accent-bg: #1c2536;
-      --code-bg: #20232a;
+    --accent: #37c6ff;
+    --accent-ink: #04222c;
+    --accent-dim: rgba(55, 198, 255, 0.12);
 
-      --c-temp: #ff922b;
-      --c-air: #38d9a9;
-      --c-light: #ffd43b;
-      --c-motion: #9775fa;
-      --c-distance: #4dabf7;
-      --c-imu: #f783ac;
-      --c-elec: #ff6b6b;
-      --c-soil: #69db7c;
-      --c-io: #748ffc;
-    }
+    --c-temp: #ff8a3d;
+    --c-air: #35d1a1;
+    --c-light: #ffd23d;
+    --c-motion: #a685ff;
+    --c-distance: #4da8ff;
+    --c-imu: #ff6fa8;
+    --c-elec: #ff5c5c;
+    --c-soil: #58d67a;
+    --c-io: #6c8cff;
+
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-xxl: 64px;
+    --space-section: 88px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: var(--canvas);
+    color: var(--body);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
-  main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 3rem 1.25rem 6rem;
-  }
-  header.hero {
-    text-align: center;
-    padding: 1rem 0 2.5rem;
-  }
-  header.hero h1 {
-    font-size: 2.4rem;
-    margin: 0 0 0.5rem;
-    letter-spacing: -0.02em;
-    background: linear-gradient(90deg, var(--c-distance), var(--c-imu) 50%, var(--c-light));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    display: inline-block;
-  }
-  header.hero p.tagline {
-    color: var(--text-dim);
-    font-size: 1.1rem;
-    max-width: 640px;
-    margin: 0 auto;
-  }
-  .badges {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: 1.25rem;
-  }
-  .badge {
-    display: inline-block;
-    padding: 0.3rem 0.75rem;
-    border-radius: 999px;
-    background: var(--accent-bg);
-    color: var(--accent);
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    border: 1px solid transparent;
-  }
-  .badge:hover { border-color: var(--accent); }
-  .badge.temp   { background: color-mix(in srgb, var(--c-temp) 15%, transparent);   color: var(--c-temp); }
-  .badge.air    { background: color-mix(in srgb, var(--c-air) 15%, transparent);    color: var(--c-air); }
-  .badge.motion { background: color-mix(in srgb, var(--c-motion) 15%, transparent); color: var(--c-motion); }
+  main { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem 5rem; }
 
-  section { margin-top: 3.5rem; }
-  section > h2 {
-    font-size: 1.4rem;
-    margin-bottom: 0.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  h1, h2, h3 { color: var(--ink); font-weight: 800; line-height: 1.1; margin: 0; text-wrap: balance; }
+  a { color: var(--accent); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none;
+    z-index: 100;
+    transition: top 0.15s ease;
   }
+  .skip-link:focus { top: 1rem; }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1rem;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: var(--canvas);
+    padding: 4.5rem 0 0;
+    text-align: center;
+  }
+  .hero-inner { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+  .hero h1 {
+    font-size: 3.4rem;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+  .rgb-stripe {
+    height: 4px;
+    width: 96px;
+    margin: 1.5rem auto;
+    border-radius: 0;
+    background: linear-gradient(90deg, var(--c-elec), var(--c-light) 50%, var(--accent));
+  }
+  .hero-sub {
+    color: var(--body);
+    font-size: 1.1rem;
+    max-width: 560px;
+    margin: 0 auto 2rem;
+  }
+  .hero-cta { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 3rem; }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .stat-cell {
+    background: var(--surface-soft);
+    border: 1px solid var(--hairline);
+    border-top: none;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .stat-cell:hover { background: var(--surface-elevated); }
+  .stat-cell + .stat-cell { border-left: none; }
+  .stat-value { display: block; font-size: 1.9rem; font-weight: 800; color: var(--ink); }
+  .stat-label {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .hub-network {
+    display: block;
+    width: 100%;
+    max-width: 1120px;
+    aspect-ratio: 900 / 260;
+    margin: 0 auto;
+    padding: 0 1.5rem 2.5rem;
+  }
+  .hub-network .link { stroke: var(--hairline-strong); stroke-width: 1.5; fill: none; }
+  .hub-network .node { stroke: var(--canvas); stroke-width: 3; }
+  .hub-network .node-provider { fill: var(--c-temp); }
+  .hub-network .node-consumer { fill: var(--c-motion); }
+  .hub-network .node-hub { fill: var(--accent); }
+  .hub-network .hub-label {
+    fill: var(--accent-ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .hub-network .packet {
+    fill: var(--ink);
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.55));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Hide the moving packets outright instead of pausing the SMIL
+       animateMotion elements: pausing them via the SVG DOM API leaves each
+       packet frozen wherever its individual animation happened to be in its
+       cycle - including ones that haven't started yet, which some browsers
+       render at a stray/uninitialized position instead of their path's
+       start point. Hiding is simple and correct everywhere; the static
+       network (nodes + lines) still fully conveys the diagram. */
+    .hub-network .packet { display: none; }
+  }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: var(--space-section); }
+  section > h2 { font-size: 1.7rem; text-transform: none; }
   section > p.lead {
-    color: var(--text-dim);
-    margin-top: 0.25rem;
-    margin-bottom: 1.5rem;
-    max-width: 720px;
+    color: var(--body);
+    margin-top: 0.6rem;
+    margin-bottom: 2rem;
+    max-width: 640px;
   }
 
   .arch {
@@ -126,21 +188,21 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin: 1.5rem 0;
+    align-items: stretch;
   }
   .arch .box {
-    border: 1px solid var(--border);
+    border: 1px solid var(--hairline);
     border-top: 3px solid var(--cat, var(--accent));
-    border-radius: var(--radius);
     padding: 1.25rem;
-    background: var(--bg-alt);
+    background: var(--surface-card);
   }
   .arch .box h3 { margin: 0 0 0.4rem; font-size: 1rem; }
-  .arch .box p { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
+  .arch .box p { margin: 0; color: var(--body); font-size: 0.9rem; }
   .arch .arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-dim);
+    color: var(--muted);
     font-size: 1.4rem;
   }
   @media (max-width: 720px) {
@@ -149,87 +211,94 @@
   }
 
   .hub-card {
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    background: var(--bg-alt);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent);
+    padding: 1.75rem;
+    background: var(--surface-card);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
   }
-  .hub-card div p { margin: 0.3rem 0 0; color: var(--text-dim); }
-  .hub-card div h3 { margin: 0; font-size: 1.15rem; }
+  .hub-card div p { margin: 0.4rem 0 0; color: var(--body); }
+  .hub-card div h3 { margin: 0; font-size: 1.2rem; }
 
+  /* ---------- Buttons ---------- */
   .btn {
-    display: inline-block;
-    padding: 0.55rem 1.1rem;
-    border-radius: 8px;
-    background: var(--accent);
-    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 1.6rem;
+    border-radius: 0;
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.92rem;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     white-space: nowrap;
-    border: none;
+    border: 1px solid transparent;
     cursor: pointer;
     font-family: inherit;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
   }
-  .btn:hover { opacity: 0.9; }
-  .btn.secondary {
-    background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: #63d4ff; }
+  .btn-outline { background: transparent; color: var(--ink); border-color: var(--hairline-strong); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { height: 40px; padding: 0 1.1rem; font-size: 0.76rem; }
 
-  .category { margin-bottom: 2rem; --cat: var(--accent); }
+  /* ---------- Category cards ---------- */
+  .category { margin-bottom: 2.25rem; --cat: var(--accent); }
   .category h3 {
-    font-size: 1.02rem;
+    font-size: 0.85rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--cat, var(--text-dim));
-    margin-bottom: 0.75rem;
-    border-bottom: 2px solid var(--cat, var(--border));
-    padding-bottom: 0.4rem;
+    letter-spacing: 0.08em;
+    color: var(--body-strong);
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--hairline);
+    border-left: 3px solid var(--cat, var(--hairline));
+    padding-left: 0.6rem;
   }
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 0.9rem;
+    gap: 2px;
   }
   .card {
     position: relative;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--cat, var(--accent));
-    border-radius: var(--radius);
-    padding: 1rem 2.6rem 1rem 1.1rem;
-    background: var(--bg);
-    transition: border-color 0.15s ease, transform 0.1s ease;
+    border: 1px solid var(--hairline);
+    border-top: 3px solid var(--cat, var(--accent));
+    padding: 1.1rem 2.6rem 1.1rem 1.1rem;
+    background: var(--surface-card);
+    transition: background 0.15s ease;
   }
-  .card:hover { transform: translateY(-1px); }
+  .card:hover { background: var(--surface-elevated); }
   .card a.name {
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 700;
+    color: var(--ink);
     text-decoration: none;
     font-size: 0.98rem;
   }
   .card a.name:hover { color: var(--cat, var(--accent)); }
   .card p {
-    margin: 0.35rem 0 0;
-    font-size: 0.87rem;
-    color: var(--text-dim);
+    margin: 0.4rem 0 0;
+    font-size: 0.86rem;
+    color: var(--body);
   }
   .card code {
     background: var(--code-bg);
-    border-radius: 4px;
     padding: 0.1rem 0.35rem;
     font-size: 0.82rem;
+    color: var(--body-strong);
   }
   .pick {
     position: absolute;
-    top: 0.85rem;
+    top: 0.95rem;
     right: 0.9rem;
     cursor: pointer;
   }
@@ -242,22 +311,22 @@
 
   pre {
     background: var(--code-bg);
-    border-radius: var(--radius);
+    border: 1px solid var(--hairline);
     padding: 1rem 1.1rem;
     overflow-x: auto;
     font-size: 0.85rem;
-    border: 1px solid var(--border);
+    color: var(--body-strong);
   }
-  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
-  ol.steps { padding-left: 1.2rem; }
-  ol.steps li { margin-bottom: 0.6rem; }
+  ol.steps { padding-left: 1.2rem; color: var(--body); }
+  ol.steps li { margin-bottom: 0.7rem; }
+  ol.steps li::marker { color: var(--accent); font-weight: 700; }
 
   .customizer-toolbar {
     display: flex;
     gap: 0.6rem;
     flex-wrap: wrap;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
 
   .sticky-bar {
@@ -265,12 +334,14 @@
     bottom: 1.25rem;
     right: 1.25rem;
     background: var(--accent);
-    color: #fff;
-    padding: 0.7rem 1.1rem;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    color: var(--accent-ink);
+    padding: 0.8rem 1.2rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    font-family: inherit;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     cursor: pointer;
     opacity: 0;
     transform: translateY(12px);
@@ -278,59 +349,104 @@
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 10;
   }
-  .sticky-bar.visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
+  .sticky-bar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
   footer {
-    margin-top: 4rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 0.88rem;
+    margin-top: 5rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.85rem;
     text-align: center;
   }
-  footer a { color: var(--text-dim); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 2.2rem; }
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .stat-cell:nth-child(2n) { border-left: 1px solid var(--hairline); }
+    .led-shelf { grid-template-columns: repeat(14, 1fr); }
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
-<main>
 
-  <header class="hero">
-    <h1>WLED Sensor Hub</h1>
-    <p class="tagline">
-      A central WLED usermod that turns sensor readings from independent provider
-      usermods into MQTT (with Home Assistant discovery), the <code>/json</code> API
-      and the web UI Info tab &mdash; plus consumer usermods that bind those readings
-      straight into effects, brightness and color, live.
+<a class="skip-link" href="#architecture">Skip to content</a>
+
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <p class="eyebrow">Open-source WLED usermod</p>
+    <h1>Sensor Hub for WLED</h1>
+    <div class="rgb-stripe" aria-hidden="true"></div>
+    <p class="hero-sub">
+      One usermod turns sensor readings into MQTT, Home Assistant discovery and the
+      JSON API. Consumer usermods read the same bus back into effects, brightness and color, live.
     </p>
-    <div class="badges">
-      <a class="badge" href="https://github.com/lost-hope/sensor-hub">Hub Repo</a>
-      <a class="badge temp" href="#providers">23 Providers</a>
-      <a class="badge motion" href="#consumers">2 Consumers</a>
-      <a class="badge air" href="#customizer">Build a config</a>
-      <a class="badge" href="https://github.com/wled/WLED">Built for WLED</a>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#customizer">Build your config</a>
+      <a class="btn btn-outline" href="https://github.com/lost-hope/sensor-hub">View on GitHub</a>
     </div>
-  </header>
+  </div>
+</header>
+
+<svg class="hub-network" id="hubNetwork" aria-hidden="true" viewBox="0 0 900 260" preserveAspectRatio="xMidYMid meet">
+  <path class="link" d="M90,30 Q270,30 450,130" />
+  <path class="link" d="M90,80 Q270,80 450,130" />
+  <path class="link" d="M90,130 Q270,130 450,130" />
+  <path class="link" d="M90,180 Q270,180 450,130" />
+  <path class="link" d="M90,230 Q270,230 450,130" />
+  <path class="link" d="M450,130 Q630,130 810,90" />
+  <path class="link" d="M450,130 Q630,130 810,170" />
+
+  <circle class="node node-provider" cx="90" cy="30" r="9" />
+  <circle class="node node-provider" cx="90" cy="80" r="9" />
+  <circle class="node node-provider" cx="90" cy="130" r="9" />
+  <circle class="node node-provider" cx="90" cy="180" r="9" />
+  <circle class="node node-provider" cx="90" cy="230" r="9" />
+
+  <circle class="node node-consumer" cx="810" cy="90" r="11" />
+  <circle class="node node-consumer" cx="810" cy="170" r="11" />
+
+  <circle class="node node-hub" cx="450" cy="130" r="26" />
+  <text class="hub-label" x="450" y="135" text-anchor="middle">HUB</text>
+
+  <circle class="packet" r="4"><animateMotion path="M90,30 Q270,30 450,130" dur="2.6s" begin="0s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M90,80 Q270,80 450,130" dur="2.3s" begin="0.5s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M90,130 Q270,130 450,130" dur="2.9s" begin="1s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M90,180 Q270,180 450,130" dur="2.4s" begin="1.4s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M90,230 Q270,230 450,130" dur="2.7s" begin="0.2s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M450,130 Q630,130 810,90" dur="2.1s" begin="0.8s" repeatCount="indefinite" /></circle>
+  <circle class="packet" r="4"><animateMotion path="M450,130 Q630,130 810,170" dur="2.2s" begin="1.6s" repeatCount="indefinite" /></circle>
+</svg>
+
+<div class="stat-strip">
+  <a class="stat-cell" href="#providers"><span class="stat-value">23</span><span class="stat-label">Providers</span></a>
+  <a class="stat-cell" href="#consumers"><span class="stat-value">2</span><span class="stat-label">Consumers</span></a>
+  <a class="stat-cell" href="#hub"><span class="stat-value">1</span><span class="stat-label">Hub</span></a>
+  <a class="stat-cell" href="https://github.com/wled/WLED"><span class="stat-value">WLED</span><span class="stat-label">Built for</span></a>
+</div>
+
+<main>
 
   <section id="architecture">
     <h2>How it fits together</h2>
     <p class="lead">
-      One usermod owns the bus. Everything else either feeds it or reads from it &mdash;
-      no provider ever talks to MQTT/JSON/HA directly, and no consumer ever needs to
+      One usermod owns the bus. Everything else either feeds it or reads from it.
+      No provider ever talks to MQTT, JSON or HA directly, and no consumer ever needs to
       know which physical chip a reading came from.
     </p>
     <div class="arch">
       <div class="box" style="--cat: var(--c-temp)">
         <h3>Providers</h3>
-        <p>Read one piece of hardware (an I2C chip, a GPIO pin, ...) and push readings into the hub.</p>
+        <p>Read one piece of hardware (an I2C chip, a GPIO pin, and so on) and push readings into the hub.</p>
       </div>
-      <div class="arrow">&rarr;</div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
       <div class="box" style="--cat: var(--accent)">
         <h3>Sensor Hub</h3>
-        <p>Owns MQTT/HA discovery, the JSON API and the Info tab. Sensors register at compile time, attach at runtime &mdash; no fixed limit.</p>
+        <p>Owns MQTT/HA discovery, the JSON API and the Info tab, with sensors registering at compile time and attaching at runtime. No fixed limit.</p>
       </div>
     </div>
     <div class="arch" style="margin-top: 0.5rem;">
@@ -338,10 +454,10 @@
         <h3>Sensor Hub</h3>
         <p>Exposes readings by name (<code>getValueByName()</code>) or by quantity (<code>getValue(type)</code>).</p>
       </div>
-      <div class="arrow">&rarr;</div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
       <div class="box" style="--cat: var(--c-motion)">
         <h3>Consumers</h3>
-        <p>Read the hub and drive an effect, a color, brightness &mdash; a bespoke effect, or a generic live binding.</p>
+        <p>Read the hub and drive an effect, a color, or brightness, either through a bespoke effect or a generic live binding.</p>
       </div>
     </div>
   </section>
@@ -351,17 +467,17 @@
     <div class="hub-card">
       <div>
         <h3>sensor-hub</h3>
-        <p>Compile-time sensor slot registration (no fixed sensor limit), an open string-identified
-          measurement type system, MQTT + Home Assistant discovery, the JSON API, Info tab display
+        <p>Compile-time sensor slot registration with no fixed sensor limit, an open string-identified
+          measurement type system, MQTT and Home Assistant discovery, the JSON API, and Info tab display
           with per-quantity unit conversion.</p>
       </div>
-      <a class="btn" href="https://github.com/lost-hope/sensor-hub">View on GitHub</a>
+      <a class="btn btn-outline btn-sm" href="https://github.com/lost-hope/sensor-hub">View on GitHub</a>
     </div>
   </section>
 
   <section id="providers">
     <h2>Sensor Providers</h2>
-    <p class="lead">Each provider owns exactly one piece of hardware and knows nothing about MQTT, JSON, or Home Assistant &mdash; that's the hub's job. Tick any you're using to add them to the config builder below.</p>
+    <p class="lead">Each provider owns exactly one piece of hardware and knows nothing about MQTT, JSON or Home Assistant. That's the hub's job. Tick any you're using to add them to the config builder below.</p>
 
     <div class="category" style="--cat: var(--c-temp)">
       <h3>Temperature &amp; Humidity</h3>
@@ -369,37 +485,37 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-bme280-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-bme280-provider">BME280</a>
-          <p>Bosch BME280 &mdash; <code>temperature</code>, <code>humidity</code>, <code>pressure</code>.</p>
+          <p>Bosch BME280: <code>temperature</code>, <code>humidity</code>, <code>pressure</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-shtc3-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-shtc3-provider">SHTC3</a>
-          <p>Sensirion SHTC3 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+          <p>Sensirion SHTC3: <code>temperature</code>, <code>humidity</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-si7021-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-si7021-provider">Si7021</a>
-          <p>Silicon Labs Si7021 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+          <p>Silicon Labs Si7021: <code>temperature</code>, <code>humidity</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-aht10-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-aht10-provider">AHT10 / AHT20</a>
-          <p>Aosong AHT10/AHT20 &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+          <p>Aosong AHT10/AHT20: <code>temperature</code>, <code>humidity</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-dht-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-dht-provider">DHT11 / DHT22</a>
-          <p>DHT11 / DHT22 (AM2302) &mdash; <code>temperature</code>, <code>humidity</code>.</p>
+          <p>DHT11 / DHT22 (AM2302): <code>temperature</code>, <code>humidity</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-ds18b20-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-ds18b20-provider">DS18B20</a>
-          <p>Dallas/Maxim 1-Wire probe &mdash; <code>temperature</code> only.</p>
+          <p>Dallas/Maxim 1-Wire probe: <code>temperature</code> only.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-internal-temperature-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-internal-temperature-provider">Internal Temperature</a>
-          <p>The ESP32's own built-in die temperature sensor &mdash; no extra hardware.</p>
+          <p>The ESP32's own built-in die temperature sensor. No extra hardware.</p>
         </div>
       </div>
     </div>
@@ -410,12 +526,12 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-scd4x-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-scd4x-provider">SCD40 / SCD41</a>
-          <p>Sensirion SCD4x &mdash; true NDIR <code>co2</code> (ppm), plus <code>temperature</code>/<code>humidity</code>.</p>
+          <p>Sensirion SCD4x: true NDIR <code>co2</code> (ppm), plus <code>temperature</code>/<code>humidity</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-bme68x-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-bme68x-provider">BME68X</a>
-          <p>Bosch BME680/BME688 &mdash; temperature/humidity/pressure plus raw <code>gas_resistance</code>.</p>
+          <p>Bosch BME680/BME688: temperature, humidity, pressure, plus raw <code>gas_resistance</code>.</p>
         </div>
       </div>
     </div>
@@ -426,17 +542,17 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-bh1750-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-bh1750-provider">BH1750</a>
-          <p>Rohm BH1750 &mdash; calibrated <code>illuminance</code> (lx).</p>
+          <p>Rohm BH1750: calibrated <code>illuminance</code> (lx).</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-ldr-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-ldr-provider">LDR</a>
-          <p>Simple photoresistor voltage divider &mdash; uncalibrated 0-100% light level.</p>
+          <p>Simple photoresistor voltage divider: uncalibrated 0-100% light level.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-tcs34725-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-tcs34725-provider">TCS34725</a>
-          <p>RGB color + ambient light &mdash; <code>illuminance</code>, <code>color_temp</code>, R/G/B channels.</p>
+          <p>RGB color and ambient light: <code>illuminance</code>, <code>color_temp</code>, R/G/B channels.</p>
         </div>
       </div>
     </div>
@@ -447,12 +563,12 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-pir-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-pir-provider">PIR</a>
-          <p>HC-SR501 and similar &mdash; single binary <code>motion</code> sensor.</p>
+          <p>HC-SR501 and similar: single binary <code>motion</code> sensor.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-ld2410-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-ld2410-provider">LD2410</a>
-          <p>Hi-Link mmWave presence radar &mdash; presence plus moving/stationary distance.</p>
+          <p>Hi-Link mmWave presence radar: presence plus moving/stationary distance.</p>
         </div>
       </div>
     </div>
@@ -463,12 +579,12 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-vl53l0x-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-vl53l0x-provider">VL53L0X</a>
-          <p>ST time-of-flight sensor &mdash; <code>distance</code> (mm), I2C.</p>
+          <p>ST time-of-flight sensor: <code>distance</code> (mm), I2C.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-hcsr04-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-hcsr04-provider">HC-SR04</a>
-          <p>Ultrasonic distance &mdash; cheaper, longer-range alternative that also works outdoors.</p>
+          <p>Ultrasonic distance: cheaper, longer-range alternative that also works outdoors.</p>
         </div>
       </div>
     </div>
@@ -479,12 +595,12 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-qmi8658-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-qmi8658-provider">QMI8658</a>
-          <p>6-axis IMU &mdash; 3-axis <code>acceleration</code> exposed.</p>
+          <p>6-axis IMU: 3-axis <code>acceleration</code> exposed.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-mpu6050-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-mpu6050-provider">MPU-6050</a>
-          <p>InvenSense 6-axis IMU &mdash; 3-axis <code>acceleration</code> exposed.</p>
+          <p>InvenSense 6-axis IMU: 3-axis <code>acceleration</code> exposed.</p>
         </div>
       </div>
     </div>
@@ -495,17 +611,17 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-ads1115-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-ads1115-provider">ADS1115</a>
-          <p>TI 16-bit 4-channel ADC &mdash; four generic analog voltage inputs.</p>
+          <p>TI 16-bit 4-channel ADC: four generic analog voltage inputs.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-ina226-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-ina226-provider">INA226</a>
-          <p>Current/voltage/power monitor &mdash; <code>voltage</code>, <code>current</code>, <code>power</code>.</p>
+          <p>Current/voltage/power monitor: <code>voltage</code>, <code>current</code>, <code>power</code>.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-max17048-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-max17048-provider">MAX17048</a>
-          <p>LiPo/LiIon fuel gauge &mdash; <code>voltage</code>, <code>battery</code> (%).</p>
+          <p>LiPo/LiIon fuel gauge: <code>voltage</code>, <code>battery</code> (%).</p>
         </div>
       </div>
     </div>
@@ -516,7 +632,7 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-soil-moisture-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-soil-moisture-provider">Soil Moisture</a>
-          <p>Capacitive probe &mdash; calibrated 0-100% moisture level.</p>
+          <p>Capacitive probe: calibrated 0-100% moisture level.</p>
         </div>
       </div>
     </div>
@@ -527,7 +643,7 @@
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-hub-gpio-provider"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-hub-gpio-provider">GPIO Contact</a>
-          <p>4 independent digital pins &mdash; reed switches, float switches, dry contacts.</p>
+          <p>4 independent digital pins: reed switches, float switches, dry contacts.</p>
         </div>
       </div>
     </div>
@@ -535,20 +651,20 @@
 
   <section id="consumers">
     <h2>Consumer Usermods</h2>
-    <p class="lead">These don't provide sensors &mdash; they read the hub and drive WLED itself. Tick any you're using to add them to the config builder below.</p>
+    <p class="lead">These don't provide sensors. They read the hub and drive WLED itself. Tick any you're using to add them to the config builder below.</p>
     <div class="category" style="--cat: var(--c-motion)">
       <div class="cards">
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="particle-tilt-effect"></label>
           <a class="name" href="https://github.com/lost-hope/particle-tilt-effect">particle-tilt-effect</a>
-          <p>Adds a new WLED effect, "Accel Tilt": a particle-system box that tilts with a real
+          <p>Adds a new WLED effect, &ldquo;Accel Tilt&rdquo;: a particle-system box that tilts with a real
             accelerometer reading, instead of a canned animation.</p>
         </div>
         <div class="card">
           <label class="pick"><input type="checkbox" data-repo="sensor-fx-binder"></label>
           <a class="name" href="https://github.com/lost-hope/sensor-fx-binder">sensor-fx-binder</a>
           <p>Binds live sensor readings to any existing effect's speed/intensity/custom sliders,
-            brightness, color or checkboxes &mdash; generically, no bespoke effect required.</p>
+            brightness, color or checkboxes, generically, with no bespoke effect required.</p>
         </div>
       </div>
     </div>
@@ -559,15 +675,15 @@
     <p class="lead">
       Tick whatever you're using above (or use the buttons below), then copy the generated
       <code>custom_usermods</code> block straight into your <code>platformio_override.ini</code>.
-      Links point at each usermod's published repo, so PlatformIO fetches everything automatically &mdash;
-      no local cloning required.
+      Links point at each usermod's published repo, so PlatformIO fetches everything automatically.
+      No local cloning required.
     </p>
     <div class="customizer-toolbar">
-      <button id="selectAll" class="btn secondary" type="button">Select all</button>
-      <button id="selectNone" class="btn secondary" type="button">Clear all</button>
-      <button id="copyConfig" class="btn" type="button">Copy config</button>
+      <button id="selectAll" class="btn btn-outline btn-sm" type="button">Select all</button>
+      <button id="selectNone" class="btn btn-outline btn-sm" type="button">Clear all</button>
+      <button id="copyConfig" class="btn btn-primary btn-sm" type="button">Copy config</button>
     </div>
-    <pre><code id="configOutput">custom_usermods =
+    <pre aria-live="polite"><code id="configOutput">custom_usermods =
   ${env:esp32dev.custom_usermods}
   # tick sensors and consumers above to build your config</code></pre>
   </section>
@@ -585,9 +701,9 @@ custom_usermods =
   https://github.com/lost-hope/sensor-hub.git
   https://github.com/lost-hope/sensor-hub-bme280-provider.git</code></pre>
     <ol class="steps" start="3">
-      <li>Build and flash. Configure each provider's pins/I2C in its own Settings page &mdash; sensors appear in MQTT, the Info tab and <code>/json/state</code> automatically once attached.</li>
+      <li>Build and flash. Configure each provider's pins/I2C in its own Settings page. Sensors appear in MQTT, the Info tab and <code>/json/state</code> automatically once attached.</li>
     </ol>
-    <p>Full wiring, settings and MQTT/HA discovery details are documented in each repo's own readme &mdash; start with <a href="https://github.com/lost-hope/sensor-hub">sensor-hub</a>.</p>
+    <p>Full wiring, settings and MQTT/HA discovery details are documented in each repo's own readme. Start with <a href="https://github.com/lost-hope/sensor-hub">sensor-hub</a>.</p>
   </section>
 
   <footer>
@@ -596,7 +712,7 @@ custom_usermods =
 
 </main>
 
-<div class="sticky-bar" id="stickyBar"><span id="stickyCount">0</span> selected &mdash; view config</div>
+<button type="button" class="sticky-bar" id="stickyBar"><span id="stickyCount">0</span> selected. View config</button>
 
 <script>
 (function () {
@@ -623,7 +739,11 @@ custom_usermods =
     stickyBar.classList.toggle('visible', selected.length > 0);
   }
 
-  checkboxes.forEach(function (cb) { cb.addEventListener('change', update); });
+  checkboxes.forEach(function (cb) {
+    cb.addEventListener('change', update);
+    var nameEl = cb.closest('.card').querySelector('.name');
+    if (nameEl) cb.setAttribute('aria-label', 'Include ' + nameEl.textContent + ' in config');
+  });
 
   document.getElementById('selectAll').addEventListener('click', function () {
     checkboxes.forEach(function (cb) { cb.checked = true; });
